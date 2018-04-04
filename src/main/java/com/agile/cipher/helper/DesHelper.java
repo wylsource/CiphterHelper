@@ -13,7 +13,7 @@ import javax.crypto.Cipher;
 
 /**
  * @Author: WuYL
- * @Description:
+ * @Description: DES 加密算法
  * @Date: Create in 2018/4/3 15:19
  * @Modified By:
  */

@@ -2,7 +2,7 @@ package com.agile.cipher.helper;
 
 /**
  * @Author: WuYL
- * @Description:
+ * @Description: 加解密接口
  * @Date: Create in 2018/4/3 17:15
  * @Modified By:
  */
