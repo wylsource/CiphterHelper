@@ -1,161 +1,130 @@
 package com.agile.demo;
+import org.apache.commons.codec.binary.Base64;
+import org.bouncycastle.jce.provider.BouncyCastleProvider;
+import org.bouncycastle.util.encoders.Hex;
 
 import javax.crypto.Cipher;
-import javax.crypto.SecretKey;
-import javax.crypto.SecretKeyFactory;
-import javax.crypto.spec.DESKeySpec;
-import java.io.*;
-import java.security.MessageDigest;
+import javax.crypto.NoSuchPaddingException;
+import javax.crypto.spec.IvParameterSpec;
+import javax.crypto.spec.SecretKeySpec;
+import java.security.Key;
 import java.security.NoSuchAlgorithmException;
-import java.security.SecureRandom;
+import java.security.NoSuchProviderException;
+import java.security.Security;
+import java.util.Arrays;
 
 /**
- * @Author: WuYL
- * @Description:
- * @Date: Create in 2018/4/4 10:05
- * @Modified By:
+ *
+ * @author ngh
+ * AES128 算法
+ *
+ * CBC 模式
+ *
+ * PKCS7Padding 填充模式
+ *
+ * CBC模式需要添加一个参数iv
+ *
+ * 介于java 不支持PKCS7Padding，只支持PKCS5Padding 但是PKCS7Padding 和 PKCS5Padding 没有什么区别
+ * 要实现在java端用PKCS7Padding填充，需要用到bouncycastle组件来实现
  */
 public class DemoTest {
-    /**
-     * 默认的密码字符串组合，用来将字节转换成 16 进制表示的字符,apache校验下载的文件的正确性用的就是默认的这个组合
-     */
-    protected static char hexDigits[] = { '0', '1', '2', '3', '4', '5', '6',
-            '7', '8', '9', 'a', 'b', 'c', 'd', 'e', 'f' };
+    // 算法名称
+    final String KEY_ALGORITHM = "AES";
+    // 加解密算法/模式/填充方式
+    final String algorithmStr = "AES/CBC/PKCS7Padding";
+    //
+    private Key key;
+    private Cipher cipher;
+    boolean isInited = false;
 
-    protected static MessageDigest messagedigest = null;
-    static {
+    String iv = "AGIlesTar*##%&$}";
+//    byte[] iv = { 0x30, 0x31, 0x30, 0x32, 0x30, 0x33, 0x30, 0x34, 0x30, 0x35, 0x30, 0x36, 0x30, 0x37, 0x30, 0x38 };
+    public void init(byte[] keyBytes) {
+
+        // 如果密钥不足16位，那么就补足.  这个if 中的内容很重要
+        int base = 16;
+        if (keyBytes.length % base != 0) {
+            int groups = keyBytes.length / base + (keyBytes.length % base != 0 ? 1 : 0);
+            byte[] temp = new byte[groups * base];
+            Arrays.fill(temp, (byte) 0);
+            System.arraycopy(keyBytes, 0, temp, 0, keyBytes.length);
+            keyBytes = temp;
+        }
+        // 初始化
+        Security.addProvider(new BouncyCastleProvider());
+        // 转化成JAVA的密钥格式
+        key = new SecretKeySpec(keyBytes, KEY_ALGORITHM);
         try {
-            messagedigest = MessageDigest.getInstance("MD5");
-        } catch (NoSuchAlgorithmException nsaex) {
-            System.err.println(DemoTest.class.getName()
-                    + "初始化失败，MessageDigest不支持MD5Util。");
-            nsaex.printStackTrace();
-        }
-    }
-
-    /**
-     * 生成字符串的md5校验值
-     *
-     * @param s
-     * @return
-     */
-    public static String getMD5String(String s) {
-        return getMD5String(s.getBytes());
-    }
-
-    /**
-     * 判断字符串的md5校验码是否与一个已知的md5码相匹配
-     *
-     * @param password
-     * 要校验的字符串
-     * @param md5PwdStr
-     * 已知的md5校验码
-     * @return
-     */
-    public static boolean isEqualsToMd5(String password, String md5PwdStr) {
-        String s = getMD5String(password);
-        return s.equals(md5PwdStr);
-    }
-
-    /**
-     * 生成文件的md5校验值
-     *
-     * @param file
-     * @return
-     * @throws IOException
-     */
-    public static String getFileMD5String(File file) throws IOException {
-        InputStream fis;
-        fis = new FileInputStream(file);
-        byte[] buffer = new byte[1024];
-        int numRead = 0;
-        while ((numRead = fis.read(buffer)) > 0) {
-            messagedigest.update(buffer, 0, numRead);
-        }
-        fis.close();
-        return bufferToHex(messagedigest.digest());
-    }
-
-    /**
-     * 生成字节数组的md5校验值
-     *
-     * @return
-     */
-    public static String getMD5String(byte[] bytes) {
-        messagedigest.update(bytes);
-        return bufferToHex(messagedigest.digest());
-    }
-
-    private static String bufferToHex(byte bytes[]) {
-        return bufferToHex(bytes, 0, bytes.length);
-    }
-
-    private static String bufferToHex(byte bytes[], int m, int n) {
-        StringBuffer stringbuffer = new StringBuffer(2 * n);
-        int k = m + n;
-        for (int l = m; l < k; l++) {
-            appendHexPair(bytes[l], stringbuffer);
-        }
-        return stringbuffer.toString();
-    }
-
-    private static void appendHexPair(byte bt, StringBuffer stringbuffer) {
-        char c0 = hexDigits[(bt & 0xf0) >> 4];// 取字节中高 4 位的数字转换, >>>
-        // 为逻辑右移，将符号位一起右移,此处未发现两种符号有何不同
-        char c1 = hexDigits[bt & 0xf];// 取字节中低 4 位的数字转换
-        stringbuffer.append(c0);
-        stringbuffer.append(c1);
-    }
-
-    /**
-     * 将源字符串使用MD5加密为字节数组
-     * @param source
-     * @return
-     */
-    public static byte[] encode2bytes(String source) {
-        byte[] result = null;
-        try {
-            MessageDigest md = MessageDigest.getInstance("MD5");
-            md.reset();
-            md.update(source.getBytes("UTF-8"));
-            result = md.digest();
+            // 初始化cipher
+            cipher = Cipher.getInstance(algorithmStr);
         } catch (NoSuchAlgorithmException e) {
+            // TODO Auto-generated catch block
             e.printStackTrace();
-        } catch (UnsupportedEncodingException e) {
+        } catch (NoSuchPaddingException e) {
+            // TODO Auto-generated catch block
             e.printStackTrace();
         }
-
-        return result;
     }
-
     /**
-     * 将源字符串使用MD5加密为32位16进制数
-     * @param source
+     * 加密方法
+     *
+     * @param content
+     *            要加密的字符串
+     * @param keyBytes
+     *            加密密钥
      * @return
      */
-    public static String encode2hex(String source) {
-        byte[] data = encode2bytes(source);
-        StringBuffer hexString = new StringBuffer();
-        for (int i = 0; i < data.length; i++) {
-            String hex = Integer.toHexString(0xff & data[i]);
-
-            if (hex.length() == 1) {
-                hexString.append('0');
-            }
-
-            hexString.append(hex);
+    public byte[] encrypt(byte[] content, byte[] keyBytes) {
+        byte[] encryptedText = null;
+        init(keyBytes);
+        System.out.println("IV：" + new String(iv));
+        try {
+            cipher.init(Cipher.ENCRYPT_MODE, key, new IvParameterSpec(iv.getBytes()));
+            encryptedText = cipher.doFinal(content);
+        } catch (Exception e) {
+            // TODO Auto-generated catch block
+            e.printStackTrace();
         }
-
-        return hexString.toString();
+        return encryptedText;
+    }
+    /**
+     * 解密方法
+     *
+     * @param encryptedData
+     *            要解密的字符串
+     * @param keyBytes
+     *            解密密钥
+     * @return
+     */
+    public byte[] decrypt(byte[] encryptedData, byte[] keyBytes) {
+        byte[] encryptedText = null;
+        init(keyBytes);
+        System.out.println("IV：" + new String(iv));
+        try {
+            cipher.init(Cipher.DECRYPT_MODE, key, new IvParameterSpec(iv.getBytes()));
+            encryptedText = cipher.doFinal(encryptedData);
+        } catch (Exception e) {
+            // TODO Auto-generated catch block
+            e.printStackTrace();
+        }
+        return encryptedText;
     }
 
-    /**
-     * 验证字符串是否匹配
-     * @param unknown 待验证的字符串
-     * @param okHex 使用MD5加密过的16进制字符串
-     * @return 匹配返回true，不匹配返回false
-     */
-    public static boolean validate(String unknown , String okHex) {
-        return okHex.equals(encode2hex(unknown));
+    public static void main(String[] args) {
+        DemoTest aes = new DemoTest();
+//   加解密 密钥
+//        byte[] keybytes = { 0x31, 0x32, 0x33, 0x34, 0x35, 0x36, 0x37, 0x38 };
+        String keybytes = "*##%&$AGIlestar(";
+        String content = "test";
+
+        // 加密字符串
+        System.out.println("加密前的：" + content);
+        System.out.println("加密密钥：" + new String(keybytes));
+        // 加密方法
+        byte[] enc = aes.encrypt(content.getBytes(), keybytes.getBytes());
+        System.out.println("加密后的内容：" + Base64.encodeBase64String(enc));
+        // 解密方法
+        byte[] dec = aes.decrypt(enc, keybytes.getBytes());
+        System.out.println("解密后的内容：" + new String(dec));
     }
 }

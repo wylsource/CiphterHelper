@@ -19,6 +19,7 @@ public final class AlgorithmConstant {
      */
     public static final String AES_ALGORITHM_ECB_PKCS5 = "AES/ECB/PKCS5Padding";
     public static final String AES_ALGORITHM_CBC_PKCS5 = "AES/CBC/PKCS5Padding";
+    public static final String AES_ALGORITHM_CBC_PKCS7 = "AES/CBC/PKCS7Padding";
     public static final String AES_ALGORITHM_OFB_PKCS5 = "AES/OFB/PKCS5Padding";
     public static final String AES_ALGORITHM_CFB_PKCS5 = "AES/CFB/PKCS5Padding";
 

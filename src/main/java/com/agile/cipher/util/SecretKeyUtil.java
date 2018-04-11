@@ -1,6 +1,7 @@
 package com.agile.cipher.util;
 
 import com.agile.cipher.constant.AlgorithmConstant;
+import org.bouncycastle.jce.provider.BouncyCastleProvider;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -9,8 +10,10 @@ import javax.crypto.SecretKey;
 import javax.crypto.SecretKeyFactory;
 import javax.crypto.spec.DESKeySpec;
 import javax.crypto.spec.SecretKeySpec;
+import java.security.Key;
 import java.security.NoSuchAlgorithmException;
 import java.security.SecureRandom;
+import java.security.Security;
 import java.util.concurrent.atomic.AtomicInteger;
 
 /**
@@ -51,13 +54,15 @@ public class SecretKeyUtil {
      * @param password 密码
      * @return
      */
-    public static SecretKeySpec secretAesKey(final String password){
-        SecretKey secretKey = getSecretKey(128, password, AlgorithmConstant.AES_ALGORITHM);
-        if (secretKey != null){
-            // 转换为AES专用密钥
-            return new SecretKeySpec(secretKey.getEncoded(), AlgorithmConstant.AES_ALGORITHM);
-        }
-        return null;
+    public static Key secretAesKey(final String password){
+        // 初始化
+//        SecretKey secretKey = getSecretKey(128, password, AlgorithmConstant.AES_ALGORITHM);
+//        if (secretKey != null){
+//            // 转换为AES专用密钥
+//            SecretKeySpec secretKeySpec = new SecretKeySpec(secretKey.getEncoded(), AlgorithmConstant.AES_ALGORITHM);
+//            return secretKeySpec;
+//        }
+        return new SecretKeySpec(password.getBytes(), AlgorithmConstant.AES_ALGORITHM);
     }
 
     /**
@@ -65,10 +70,10 @@ public class SecretKeyUtil {
      * @param password 密码
      * @return
      */
-    public static SecretKey secretDesKey(String password){
-
-        SecretKey secretKey = getSecretKey(56, password, AlgorithmConstant.DES_ALGORITHM);
-        return secretKey;
+    public static Key secretDesKey(String password){
+        return new SecretKeySpec(password.getBytes(), AlgorithmConstant.DES_ALGORITHM);
+//        SecretKey secretKey = getSecretKey(56, password, AlgorithmConstant.DES_ALGORITHM);
+//        return secretKey;
     }
 
     private static SecretKey secretKeyFactory(final String password, String cipherAlgorithm){

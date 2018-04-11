@@ -16,8 +16,9 @@ import com.agile.cipher.joggle.impl.AesCipherModeOfb;
 public class AesTest {
 
     public static void main(String[] args) {
-        AesHelper aesHelper = new AesHelper(new AesCipherModeOfb());
-        String str = "你好啊";
+        String vipara = "AGIlesTar*##%&$}";
+        AesHelper aesHelper = new AesHelper(new AesCipherModeCbc(vipara));
+        String str = "test";
 //        String password = "123456";
         String password = "*##%&$AGIlestar(";
         String encryptStr = aesHelper.encryptStr(str, password);
@@ -25,5 +26,9 @@ public class AesTest {
         System.out.println("加密后：" + encryptStr);
         String s = aesHelper.decryptStr(encryptStr, password);
         System.out.println("解密后：" + s);
+    }
+
+    public void testEncrypt(){
+//        AesHelper aesHelper = new AesHelper(new AesCipherModeCbc());
     }
 }
