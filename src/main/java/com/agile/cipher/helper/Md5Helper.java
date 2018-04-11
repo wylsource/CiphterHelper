@@ -5,6 +5,10 @@ import org.apache.commons.codec.binary.Base64;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.io.ByteArrayInputStream;
+import java.io.File;
+import java.io.FileInputStream;
+import java.io.InputStream;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
 
@@ -89,6 +93,45 @@ public class Md5Helper {
             return bufferToHex(digest, 0, digest.length);
         }catch (Exception e){
             LOGGER.error("md5 encrypt is failed", e);
+        }
+        return null;
+    }
+
+
+    /**
+     * 对文件进行加密
+     * @param file
+     * @return
+     */
+    public String encryptFile(File file){
+        InputStream inputStream;
+        try {
+            inputStream = new FileInputStream(file);
+            byte[] content = new byte[inputStream.available()];
+            inputStream.read(content);
+            return encryptByte(content);
+        }catch (Exception e){
+            LOGGER.error("encrypt file is failed", e);
+        }
+        return null;
+    }
+
+    /**
+     * 对文件进行加密
+     * @param file
+     * @param salt
+     * @return
+     */
+    public String encryptFile(File file, String salt){
+        InputStream inputStream;
+        try {
+            inputStream = new FileInputStream(file);
+            byte[] content = new byte[inputStream.available()];
+            inputStream.read(content);
+            byte[] bytes2 = salt.getBytes();
+            return encryptByte(content, bytes2);
+        }catch (Exception e){
+            LOGGER.error("encrypt file is failed", e);
         }
         return null;
     }
